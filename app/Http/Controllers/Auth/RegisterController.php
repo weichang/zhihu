@@ -1,9 +1,9 @@
 <?php
 
 namespace App\Http\Controllers\Auth;
-
 use App\User;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Foundation\Auth\RegistersUsers;
 
@@ -62,10 +62,25 @@ class RegisterController extends Controller
      */
     protected function create(array $data)
     {
-        return User::create([
+        $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
+            'avatar'=>'images/avatars/default.png',
+            'confirmation_token'=>str_random(40),
             'password' => bcrypt($data['password']),
         ]);
+        $this->sendVerifyEmail($user);
+        return $user;
+    }
+    public function sendVerifyEmail($user)
+    {
+        $data = [
+            'url' => route('email.verify',['token'=>$user->confirmation_token]),
+            'name' => $user->name
+        ];
+        Mail::send('emails.welcome',['data'=>$data],function ($message) use ($user){
+            $message->from('jeffrey@test.dev','Laravel Zhihu');
+            $message->to($user->email);
+        });
     }
 }
